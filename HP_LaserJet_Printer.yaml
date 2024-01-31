@@ -1,0 +1,336 @@
+zabbix_export:
+  version: '6.2'
+  date: '2024-01-31T07:19:24Z'
+  template_groups:
+    -
+      uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    -
+      uuid: a3b8bc02492d4bd5a4e371e84579bef5
+      template: 'HP LaserJet Printer'
+      name: 'HP LaserJet Printer'
+      groups:
+        -
+          name: Templates
+      items:
+        -
+          uuid: 9f5e54338594467b848e86e84903af36
+          name: 'Door is Open'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.3.9.1.1.2.17.0
+          key: hw.door.open
+          history: 7d
+          description: 'Printers Door is Open'
+          tags:
+            -
+              tag: component
+              value: error
+          triggers:
+            -
+              uuid: e8bae896691d4bf4a7c65989af64a21c
+              expression: 'abs(change(/HP LaserJet Printer/hw.door.open))<>0'
+              name: 'HP printer door is open'
+              priority: WARNING
+              description: 'Check printer door.'
+        -
+          uuid: ca3609b3518e4d71ab91e2ac6a9f3f06
+          name: 'Impressions (pages)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.43.10.2.1.4.1.1
+          key: hw.impressions.pages
+          delay: 15m
+          history: 7d
+          tags:
+            -
+              tag: component
+              value: pages
+        -
+          uuid: a15e7986ffa549feb6047d7b68c2e6bf
+          name: 'Error Paper Jam'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.3.9.1.1.2.9.0
+          key: hw.paper.jam
+          history: 7d
+          value_type: FLOAT
+          description: 'HP paper Jam'
+          tags:
+            -
+              tag: component
+              value: error
+          triggers:
+            -
+              uuid: a88af3398a2f4fa69df8d894fb4bde6d
+              expression: 'abs(change(/HP LaserJet Printer/hw.paper.jam))<>0'
+              name: 'Paper jam in HP printer'
+              priority: HIGH
+              description: 'Clear Printer from stacked paper.'
+        -
+          uuid: faf3fed5a33049ce837a20f2c0516b4a
+          name: 'Error Paper Out'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.3.9.1.1.2.8.0
+          key: hw.paper.out
+          history: 7d
+          description: 'Printer without paper.'
+          tags:
+            -
+              tag: component
+              value: error
+          triggers:
+            -
+              uuid: b490ddc2fb58483e975e22b53d1de50e
+              expression: 'abs(change(/HP LaserJet Printer/hw.paper.out))<>0'
+              name: 'Out of paper in HP printer'
+              priority: WARNING
+              description: 'Load paper in the tray.'
+        -
+          uuid: 90304421eaa9432fa8cc0b835225001b
+          name: 'Error Peripheral'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.3.9.1.1.2.6.0
+          key: hw.peripheral.error
+          delay: 5m
+          history: 7d
+          description: 'Peripheral Error'
+          tags:
+            -
+              tag: component
+              value: error
+          triggers:
+            -
+              uuid: 90a6b7e6fae442a3a96591d8c442a790
+              expression: 'abs(change(/HP LaserJet Printer/hw.peripheral.error))<>0'
+              name: 'Peripheral Error'
+              priority: HIGH
+              description: 'The printer needs support.'
+        -
+          uuid: bfeb554cf5f2401c9befc519ec89cc38
+          name: 'Serial number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.43.5.1.1.17.1
+          key: hw.serial.number
+          delay: 30m
+          history: 7d
+          trends: '0'
+          value_type: CHAR
+          description: 'Printer host name'
+          inventory_link: SERIALNO_A
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            -
+              tag: component
+              value: system
+        -
+          uuid: 44e49fb01dbe4417a54d70697c76ddc2
+          name: 'Total memory size (bytes)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.5.1
+          key: hw.total.memory
+          delay: 3m
+          history: 7d
+          tags:
+            -
+              tag: component
+              value: memory
+        -
+          uuid: 9dffbddbd37c4ab19f20ee90185296ea
+          name: 'Device used memory (bytes)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.6.1
+          key: hw.used.memory
+          delay: 3m
+          history: 7d
+          tags:
+            -
+              tag: component
+              value: memory
+        -
+          uuid: acdee6f17f8f4e6390aafdb51b001b6c
+          name: 'Hardware model name'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.4.3.5.44.0
+          key: system.hw.model
+          delay: 1h
+          history: 7d
+          trends: '0'
+          value_type: CHAR
+          inventory_link: HARDWARE
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            -
+              tag: component
+              value: system
+        -
+          uuid: 2aab4e5fff934ced9d36df58c6a41b13
+          name: 'Hardware model number'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.4.3.1.10.0
+          key: system.hw.number
+          delay: 1h
+          history: 7d
+          trends: '0'
+          value_type: CHAR
+          description: 'Shows printer model number for firmware upgrade.'
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            -
+              tag: component
+              value: system
+        -
+          uuid: 1b83199e7cd14b078da2c4d4f48430c0
+          name: Uptime
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: system.hw.uptime
+          history: 7d
+          units: uptime
+          description: 'Printer uptime'
+          preprocessing:
+            -
+              type: CHECK_NOT_SUPPORTED
+              parameters:
+                - ''
+              error_handler: CUSTOM_ERROR
+              error_handler_params: '0'
+            -
+              type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            -
+              tag: component
+              value: system
+          triggers:
+            -
+              uuid: b7ad1f93aac44a33ae44603a8f920e4d
+              expression: 'last(/HP LaserJet Printer/system.hw.uptime)>0 and last(/HP LaserJet Printer/system.hw.uptime)<10m'
+              name: 'Printer has been restarted'
+              priority: WARNING
+              manual_close: 'YES'
+        -
+          uuid: c54df887f5104febafd6e9bc6b741cef
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: system.name
+          delay: 1h
+          history: 7d
+          trends: '0'
+          value_type: CHAR
+          description: 'Printer host name'
+          inventory_link: NAME
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            -
+              tag: component
+              value: system
+        -
+          uuid: 7373c1196c0e4812b4d9414367c72c98
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          description: |
+            Availability of SNMP checks on the host. The value of this item corresponds to availability icons in the host list.
+            Possible value:
+            0 - not available
+            1 - available
+            2 - unknown
+          triggers:
+            -
+              uuid: e04bb67d8d7d47ff85fafe3ea4743e76
+              expression: 'last(/HP LaserJet Printer/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'No SNMP data collection'
+              opdata: 'Current state: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+      discovery_rules:
+        -
+          uuid: 7eea5bef80d543a182236e041db4cb2c
+          name: 'Toner Cartridge'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},1.3.6.1.2.1.43.11.1.1.6.1]'
+          key: toner.cartridge
+          delay: 15m
+          item_prototypes:
+            -
+              uuid: 9008c9dd9ad54b0ab0e22c6631437734
+              name: '{#SNMPVALUE}: level (percent left)'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.43.11.1.1.9.1.{#SNMPINDEX}'
+              key: 'toner.level.[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              tags:
+                -
+                  tag: toner
+                  value: left
+              trigger_prototypes:
+                -
+                  uuid: 50a31024cd6c4550a8996cd4d592777c
+                  expression: 'max(/HP LaserJet Printer/toner.level.[{#SNMPINDEX}],30m)<5'
+                  name: 'Replace {#SNMPVALUE} level is critical'
+                  priority: WARNING
+                  manual_close: 'YES'
+            -
+              uuid: b21ce2852c1941398308b8e835d69f16
+              name: '{#SNMPVALUE}: name'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.43.11.1.1.6.1.{#SNMPINDEX}'
+              key: 'toner.name.[{#SNMPINDEX}]'
+              delay: 30m
+              trends: '0'
+              value_type: CHAR
+              preprocessing:
+                -
+                  type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              tags:
+                -
+                  tag: toner
+                  value: name
+            -
+              uuid: a58ba50aeed54ae7a203dec4b3c8a0a1
+              name: '{#SNMPVALUE}: paper print remaining value'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.11.2.3.9.4.2.1.4.1.10.5.1.1.{#SNMPINDEX}.0'
+              key: 'toner.paper.[{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              preprocessing:
+                -
+                  type: CHECK_NOT_SUPPORTED
+                  parameters:
+                    - ''
+                  error_handler: CUSTOM_ERROR
+                  error_handler_params: '0'
+              tags:
+                -
+                  tag: toner
+                  value: paper
+      macros:
+        -
+          macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+        -
+          macro: '{$TONER_LEVEL_LOW}'
+          value: '5'
+          description: '% left for activate triger'
