@@ -1,0 +1,1914 @@
+zabbix_export:
+  version: '7.2'
+  template_groups:
+    - uuid: 846977d1dfed4968bc5f8bdb363285bc
+      name: 'Templates/Operating systems'
+  templates:
+    - uuid: e83a9f14940d4d37b20f6be4905630e5
+      template: 'TerraMaster TNAS by SNMP'
+      name: 'TerraMaster TNAS by SNMP'
+      description: |
+        This is NOT an official TerraMaster TNAS template.
+        
+        Tested with TerraMaster F2-423 and TOS v5.1
+      groups:
+        - name: 'Templates/Operating systems'
+      items:
+        - uuid: f2987f5ac2fe4812b67ab9e5e2736eb1
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: baf12a65169c433bbf3581ce66f7d94d
+              expression: 'max(/TerraMaster TNAS by SNMP/icmpping,#3)=0'
+              name: 'Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout.  Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 9bf0a9f284cb4e9ca3a2b8e2c773a9e2
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: fd384bd8412d4e66a301fae9702c1fce
+              expression: 'min(/TerraMaster TNAS by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/TerraMaster TNAS by SNMP/icmppingloss,5m)<100'
+              name: 'High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              dependencies:
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'max(/TerraMaster TNAS by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 242e3b10c37341a39ce161110b98c441
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: a0649548181a42fd9a8012a56664ec70
+              expression: 'avg(/TerraMaster TNAS by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'High ICMP ping loss'
+                  expression: 'min(/TerraMaster TNAS by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/TerraMaster TNAS by SNMP/icmppingloss,5m)<100'
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'max(/TerraMaster TNAS by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 5c95875d3e144411ae6cc6cb39b05a3c
+          name: 'SNMP walk network interfaces'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.2.2.1.1,1.3.6.1.2.1.2.2.1.2,1.3.6.1.2.1.2.2.1.3,1.3.6.1.2.1.2.2.1.5,1.3.6.1.2.1.2.2.1.7,1.3.6.1.2.1.2.2.1.8,1.3.6.1.2.1.2.2.1.10,1.3.6.1.2.1.2.2.1.13,1.3.6.1.2.1.2.2.1.14,1.3.6.1.2.1.2.2.1.16,1.3.6.1.2.1.2.2.1.19,1.3.6.1.2.1.2.2.1.20]'
+          key: net.if.walk
+          history: '0'
+          value_type: TEXT
+          description: 'Discovering interfaces from IF-MIB.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: f40e20570c9a4404a1f210ecbe9f0ca7
+          name: 'System contact details'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.4.0
+          key: 'system.contact[sysContact.0]'
+          delay: 15m
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            The textual identification of the contact person for this managed node, together with information on how to contact this person.  If no contact information is known, the value is the zero-length string.
+          inventory_link: CONTACT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 37f57ed77a00462e9606f7e00999848b
+          name: 'CPU processes changes per second'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.1.6.0
+          key: system.cpu.processes
+          value_type: FLOAT
+          description: |
+            The number of process contexts currently loaded or
+            running on this system.
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: cpu
+        - uuid: 99364795c46045ff8dfd94fd4901fa36
+          name: 'SNMP walk system CPUs'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.25.3.3.1.2]'
+          key: system.cpu.walk
+          history: '0'
+          value_type: TEXT
+          description: 'Discovering system CPUs.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: ca99b53474cc468f9998f0d5884c74c4
+          name: 'Uptime (hardware)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.1.1.0
+          key: 'system.hw.uptime[hrSystemUptime.0]'
+          delay: 30s
+          trends: '0'
+          units: uptime
+          description: |
+            MIB: HOST-RESOURCES-MIB
+            The amount of time since this host was last initialized. Note that this is different from sysUpTime in the SNMPv2-MIB [RFC1907] because sysUpTime is the uptime of the network management portion of the system.
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 735fd9dc7ad94537a0683149a2a07902
+              expression: '(last(/TerraMaster TNAS by SNMP/system.hw.uptime[hrSystemUptime.0])>0 and last(/TerraMaster TNAS by SNMP/system.hw.uptime[hrSystemUptime.0])<10m)'
+              name: 'Host has been restarted'
+              event_name: '{HOST.NAME} has been restarted (uptime < 10m)'
+              priority: WARNING
+              description: 'Uptime is less than 10 minutes.'
+              manual_close: 'YES'
+              dependencies:
+                - name: 'No SNMP data collection'
+                  expression: 'max(/TerraMaster TNAS by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: bedc8cfa8df3462083d43dc03a71ca2a
+          name: 'System location'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.6.0
+          key: 'system.location[sysLocation.0]'
+          delay: 15m
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            Physical location of the node (e.g., `equipment room`, `3rd floor`). If not provided, the value is a zero-length string.
+          inventory_link: LOCATION
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: e8883e47759b422faccd5f03a5dd46fa
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: system.name
+          delay: 15m
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            An administratively-assigned name for this managed node.By convention, this is the node's fully-qualified domain name.  If the name is unknown, the value is the zero-length string.
+          inventory_link: NAME
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 98b166b7a29045ce9dfd661c89b840c7
+              expression: 'last(/TerraMaster TNAS by SNMP/system.name,#1)<>last(/TerraMaster TNAS by SNMP/system.name,#2) and length(last(/TerraMaster TNAS by SNMP/system.name))>0'
+              name: 'System name has changed'
+              event_name: 'System name has changed (new name: {ITEM.VALUE})'
+              priority: INFO
+              description: 'The name of the system has changed. Acknowledge to close the problem manually.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+                - tag: scope
+                  value: security
+        - uuid: 03c054c7a3ea4a60a99a544b1b284246
+          name: 'Used swap space'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.6.10
+          key: 'system.swap.free[memUsedSwap.0]'
+          units: B
+          description: 'The amount of swap space currently used or available.'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: c2626fbfa75d410d8c55f2fe69a81b94
+          name: 'Free swap space in %'
+          type: CALCULATED
+          key: 'system.swap.pfree[snmp]'
+          value_type: FLOAT
+          units: '%'
+          params: '(last(//system.swap.total[memTotalSwap.0])-last(//system.swap.free[memUsedSwap.0]))/last(//system.swap.total[memTotalSwap.0])*100'
+          description: 'The free space of the swap volume/file expressed in %.'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: d3ed35ee5b22411f8cf28407f95e2277
+          name: 'Total swap space'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.5.10
+          key: 'system.swap.total[memTotalSwap.0]'
+          units: B
+          description: |
+            MIB: UCD-SNMP-MIB
+            The total amount of swap space configured for this host.
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 8abdecab75e4459eb14a11b5d8373c7e
+          name: 'System users number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.1.5.0
+          key: system.users
+          delay: 3m
+          value_type: FLOAT
+          description: |
+            The number of user sessions for which this host is
+            storing state information.  A session is a collection
+            of processes requiring a single act of user
+            authentication and possibly subject to collective job
+            control.
+          tags:
+            - tag: component
+              value: users
+        - uuid: 6c7065b7b8f7462ea7044815bc4b23e2
+          name: 'SNMP walk mounted filesystems'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.25.2.3.1.1,1.3.6.1.2.1.25.2.3.1.3,1.3.6.1.2.1.25.2.3.1.5,1.3.6.1.2.1.25.2.3.1.6]'
+          key: vfs.fs.walk
+          history: '0'
+          value_type: TEXT
+          description: |
+            Snmp walk through the logical storage area on
+            the host
+          tags:
+            - tag: component
+              value: raw
+        - uuid: e62645cc41f545ffb037a5e269192f19
+          name: 'Available memory'
+          type: CALCULATED
+          key: 'vm.memory.available[snmp]'
+          units: B
+          params: 'last(//vm.memory.total[memTotalReal.0])-last(//vm.memory.shared[memShared.0])'
+          description: 'Please note that memory utilization is a rough estimate, since free memory not available is calculated total - shared, which is not accurate, but the best we can get using OIDs for TOS5.'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 5ad4bd55ab164ccb82b3d46ddd50c0be
+          name: 'Memory (buffers)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.6.6
+          key: 'vm.memory.buffers[memBuffer.0]'
+          units: B
+          description: |
+            MIB: UCD-SNMP-MIB
+            Memory used by kernel buffers (Buffers in /proc/meminfo).
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: efc8689f9b404091a6b47a6292341450
+          name: 'Memory (cached)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.6.7
+          key: 'vm.memory.cached[memCached.0]'
+          units: B
+          description: |
+            MIB: UCD-SNMP-MIB
+            Memory used by the page cache and slabs (Cached and Slab in /proc/meminfo).
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 9957db56fe2942a68b0e6599e4181b65
+          name: 'Memory (shared)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.25.2.3.1.6.8
+          key: 'vm.memory.shared[memShared.0]'
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 682fb2489e1e4e43ac6f4a19e6dc7d2a
+          name: 'Total memory'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.25.2.2.0
+          key: 'vm.memory.total[memTotalReal.0]'
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 353e24af8e304aa6816834e479c20b84
+          name: 'Memory utilization'
+          type: CALCULATED
+          key: 'vm.memory.util[snmp]'
+          value_type: FLOAT
+          units: '%'
+          params: 'last(//vm.memory.shared[memShared.0])/last(//vm.memory.total[memTotalReal.0])*100'
+          description: 'Please note that memory utilization is a rough estimate, since memory available is calculated as free+buffers+cached, which is not 100% accurate, but the best we can get using SNMP.'
+          tags:
+            - tag: component
+              value: memory
+          triggers:
+            - uuid: 4341556197db461fa511a9c9a111c03f
+              expression: 'min(/TerraMaster TNAS by SNMP/vm.memory.util[snmp],5m)>{$MEMORY.UTIL.MAX}'
+              name: 'High memory utilization'
+              event_name: 'High memory utilization (>{$MEMORY.UTIL.MAX}% for 5m)'
+              priority: AVERAGE
+              description: 'The system is running out of free memory.'
+              dependencies:
+                - name: 'Lack of available memory'
+                  expression: 'max(/TerraMaster TNAS by SNMP/vm.memory.available[snmp],5m)<{$MEMORY.AVAILABLE.MIN} and last(/TerraMaster TNAS by SNMP/vm.memory.total[memTotalReal.0])>0'
+              tags:
+                - tag: scope
+                  value: capacity
+                - tag: scope
+                  value: performance
+        - uuid: a311ee8584584071b75bea21c26964e6
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          description: |
+            Availability of SNMP checks on the host. The value of this item corresponds to availability icons in the host list.
+            Possible values:
+            0 - not available
+            1 - available
+            2 - unknown
+          valuemap:
+            name: zabbix.host.available
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: 15bfe65ad89c432cb0e287c0668022be
+              expression: 'max(/TerraMaster TNAS by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'No SNMP data collection'
+              opdata: 'Current state: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              dependencies:
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'max(/TerraMaster TNAS by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: 81f2be1908a64bec8fa2dd77577a8f2c
+          name: 'Network interfaces discovery'
+          type: DEPENDENT
+          key: net.if.discovery
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#IFADMINSTATUS}'
+                value: '{$NET.IF.IFADMINSTATUS.MATCHES}'
+              - macro: '{#IFADMINSTATUS}'
+                value: '{$NET.IF.IFADMINSTATUS.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#IFDESCR}'
+                value: '{$NET.IF.IFDESCR.MATCHES}'
+              - macro: '{#IFDESCR}'
+                value: '{$NET.IF.IFDESCR.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#IFOPERSTATUS}'
+                value: '{$NET.IF.IFOPERSTATUS.MATCHES}'
+              - macro: '{#IFOPERSTATUS}'
+                value: '{$NET.IF.IFOPERSTATUS.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#IFTYPE}'
+                value: '{$NET.IF.IFTYPE.MATCHES}'
+              - macro: '{#IFTYPE}'
+                value: '{$NET.IF.IFTYPE.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+          description: 'Discovering interfaces from IF-MIB.'
+          item_prototypes:
+            - uuid: f5fe3863729e4d408f2eb1338f288f5f
+              name: 'Interface {#IFDESCR}: Inbound packets discarded'
+              type: DEPENDENT
+              key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+              description: |
+                MIB: IF-MIB
+                The number of inbound packets which were chosen to be discarded
+                even though no errors had been detected to prevent their being deliverable to a higher-layer protocol.
+                One possible reason for discarding such a packet could be to free up buffer space.
+                Discontinuities in the value of this counter can occur at re-initialization of the management system,
+                and at other times as indicated by the value of ifCounterDiscontinuityTime.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 3m
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: 4810b9d162124043ba156a05f88bd1c3
+              name: 'Interface {#IFDESCR}: Inbound packets with errors'
+              type: DEPENDENT
+              key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+              description: |
+                MIB: IF-MIB
+                For packet-oriented interfaces, the number of inbound packets that contained errors preventing them from being deliverable to a higher-layer protocol.  For character-oriented or fixed-length interfaces, the number of inbound transmission units that contained errors preventing them from being deliverable to a higher-layer protocol. Discontinuities in the value of this counter can occur at re-initialization of the management system, and at other times as indicated by the value of ifCounterDiscontinuityTime.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 3m
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: e85307f2ac80442f9ebb61686ee1319b
+              name: 'Interface {#IFDESCR}: Bits received'
+              type: DEPENDENT
+              key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+              units: bps
+              description: |
+                MIB: IF-MIB
+                The total number of octets received on the interface,
+                including framing characters.
+                Discontinuities in the value of this counter can occur at
+                re-initialization of the management system, and at other
+                times as indicated by the value of
+                ifCounterDiscontinuityTime.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: d22b5eaa04af44bc926fcc97610a284e
+              name: 'Interface {#IFDESCR}: Outbound packets discarded'
+              type: DEPENDENT
+              key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+              description: |
+                MIB: IF-MIB
+                The number of outbound packets which were chosen to be discarded
+                even though no errors had been detected to prevent their being deliverable to a higher-layer protocol.
+                One possible reason for discarding such a packet could be to free up buffer space.
+                Discontinuities in the value of this counter can occur at re-initialization of the management system,
+                and at other times as indicated by the value of ifCounterDiscontinuityTime.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 3m
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: 3f30773023214e91965b683b508e45bb
+              name: 'Interface {#IFDESCR}: Outbound packets with errors'
+              type: DEPENDENT
+              key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+              description: |
+                MIB: IF-MIB
+                For packet-oriented interfaces, the number of outbound packets that contained errors preventing them from being deliverable to a higher-layer protocol.  For character-oriented or fixed-length interfaces, the number of outbound transmission units that contained errors preventing them from being deliverable to a higher-layer protocol. Discontinuities in the value of this counter can occur at re-initialization of the management system, and at other times as indicated by the value of ifCounterDiscontinuityTime.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 3m
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: a372a1d4b5f948edb5a3403c91cdf336
+              name: 'Interface {#IFDESCR}: Bits sent'
+              type: DEPENDENT
+              key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+              units: bps
+              description: |
+                MIB: IF-MIB
+                The total number of octets transmitted out of the interface, including framing characters. This object is a 64-bit version of ifOutOctets.Discontinuities in the value of this counter can occur at re-initialization of the management system, and at other times as indicated by the value of ifCounterDiscontinuityTime.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: bff6dc1e58e345e38b2aecc1206509f5
+              name: 'Interface {#IFDESCR}: Speed'
+              type: DEPENDENT
+              key: 'net.if.speed[ifHighSpeed.{#SNMPINDEX}]'
+              trends: '0'
+              units: bps
+              description: |
+                MIB: IF-MIB
+                An estimate of the interface's current bandwidth in units of 1,000,000 bits per second. If this object reports a value of `n`, then the speed of the interface is somewhere in the range of `n-500,000` to `n+499,999`.
+                For interfaces which do not vary in bandwidth or for those where no accurate estimation can be made, this object should contain the nominal bandwidth.
+                For a sub-layer which has no concept of bandwidth, this object should be zero.
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.5.{#SNMPINDEX}'
+                    - '0'
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+            - uuid: d3cdcca5b9534a9dba26591720e357d6
+              name: 'Interface {#IFDESCR}: Operational status'
+              type: DEPENDENT
+              key: 'net.if.status[ifOperStatus.{#SNMPINDEX}]'
+              trends: '0'
+              description: |
+                MIB: IF-MIB
+                The current operational state of the interface.
+                - The testing(3) state indicates that no operational packet scan be passed
+                - If ifAdminStatus is down(2) then ifOperStatus should be down(2)
+                - If ifAdminStatus is changed to up(1) then ifOperStatus should change to up(1) if the interface is ready to transmit and receive network traffic
+                - It should change todormant(5) if the interface is waiting for external actions (such as a serial line waiting for an incoming connection)
+                - It should remain in the down(2) state if and only if there is a fault that prevents it from going to the up(1) state
+                - It should remain in the notPresent(6) state if the interface has missing(typically, hardware) components.
+              valuemap:
+                name: 'IF-MIB::ifOperStatus'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+              trigger_prototypes:
+                - uuid: 8e7d7cca0bdd4209bd4f31ba8eda69f9
+                  expression: '{$IFCONTROL:"{#IFNAME}"}=1 and last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and (last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#1)<>last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#2))'
+                  recovery_mode: RECOVERY_EXPRESSION
+                  recovery_expression: 'last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])<>2 or {$IFCONTROL:"{#IFNAME}"}=0'
+                  name: 'Interface {#IFDESCR}: Link down'
+                  opdata: 'Current state: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  description: |
+                    This trigger expression works as follows:
+                    1. It can be triggered if the operations status is down.
+                    2. `{$IFCONTROL:"{#IFNAME}"}=1` - a user can redefine the context macro to "0", marking this interface as not important. No new trigger will be fired if this interface is down.
+                    3. `last(/TEMPLATE_NAME/METRIC,#1)<>last(/TEMPLATE_NAME/METRIC,#2)` - the trigger fires only if the operational status was up to (1) sometime before (so, does not fire for "eternal off" interfaces.)
+                    
+                    WARNING: if closed manually - it will not fire again on the next poll, because of .diff.
+                  manual_close: 'YES'
+                  tags:
+                    - tag: scope
+                      value: availability
+            - uuid: 3ae7a6966138420fb0dadd3747a0d9e9
+              name: 'Interface {#IFDESCR}: Interface type'
+              type: DEPENDENT
+              key: 'net.if.type[ifType.{#SNMPINDEX}]'
+              trends: '0'
+              description: |
+                MIB: IF-MIB
+                The type of interface.
+                Additional values for ifType are assigned by the Internet Assigned Numbers Authority (IANA),
+                through updating the syntax of the IANAifType textual convention.
+              valuemap:
+                name: 'IF-MIB::ifType'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.3.{#SNMPINDEX}'
+                    - '0'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFDESCR}'
+          trigger_prototypes:
+            - uuid: 66e81c54f2db459fa6094e659ae522c3
+              expression: |
+                change(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])<0 and last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0
+                and (
+                last(/TerraMaster TNAS by SNMP/net.if.type[ifType.{#SNMPINDEX}])=6 or
+                last(/TerraMaster TNAS by SNMP/net.if.type[ifType.{#SNMPINDEX}])=7 or
+                last(/TerraMaster TNAS by SNMP/net.if.type[ifType.{#SNMPINDEX}])=11 or
+                last(/TerraMaster TNAS by SNMP/net.if.type[ifType.{#SNMPINDEX}])=62 or
+                last(/TerraMaster TNAS by SNMP/net.if.type[ifType.{#SNMPINDEX}])=69 or
+                last(/TerraMaster TNAS by SNMP/net.if.type[ifType.{#SNMPINDEX}])=117
+                )
+                and
+                (last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])<>2)
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: |
+                (change(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0 and last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}],#2)>0) or
+                (last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2)
+              name: 'Interface {#IFDESCR}: Ethernet has changed to lower speed than it was before'
+              opdata: 'Current reported speed: {ITEM.LASTVALUE1}'
+              priority: INFO
+              description: 'This Ethernet connection has transitioned down from its known maximum speed. This might be a sign of autonegotiation issues. Acknowledge to close the problem manually.'
+              manual_close: 'YES'
+              dependencies:
+                - name: 'Interface {#IFDESCR}: Link down'
+                  expression: '{$IFCONTROL:"{#IFNAME}"}=1 and last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and (last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#1)<>last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#2))'
+                  recovery_expression: 'last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])<>2 or {$IFCONTROL:"{#IFNAME}"}=0'
+              tags:
+                - tag: scope
+                  value: performance
+            - uuid: 44f542693f8c4ee9a9dc589fa61b70e5
+              expression: |
+                (avg(/TerraMaster TNAS by SNMP/net.if.in[ifHCInOctets.{#SNMPINDEX}],15m)>({$IF.UTIL.MAX:"{#IFNAME}"}/100)*last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}]) or
+                avg(/TerraMaster TNAS by SNMP/net.if.out[ifHCOutOctets.{#SNMPINDEX}],15m)>({$IF.UTIL.MAX:"{#IFNAME}"}/100)*last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])) and
+                last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: |
+                avg(/TerraMaster TNAS by SNMP/net.if.in[ifHCInOctets.{#SNMPINDEX}],15m)<(({$IF.UTIL.MAX:"{#IFNAME}"}-3)/100)*last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}]) and
+                avg(/TerraMaster TNAS by SNMP/net.if.out[ifHCOutOctets.{#SNMPINDEX}],15m)<(({$IF.UTIL.MAX:"{#IFNAME}"}-3)/100)*last(/TerraMaster TNAS by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])
+              name: 'Interface {#IFDESCR}: High bandwidth usage'
+              event_name: 'Interface {#IFNAME}({#IFALIAS}): High bandwidth usage (>{$IF.UTIL.MAX:"{#IFNAME}"}%)'
+              opdata: 'In: {ITEM.LASTVALUE1}, out: {ITEM.LASTVALUE3}, speed: {ITEM.LASTVALUE2}'
+              priority: WARNING
+              description: 'The utilization of the network interface is close to its estimated maximum bandwidth.'
+              manual_close: 'YES'
+              dependencies:
+                - name: 'Interface {#IFDESCR}: Link down'
+                  expression: '{$IFCONTROL:"{#IFNAME}"}=1 and last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and (last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#1)<>last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#2))'
+                  recovery_expression: 'last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])<>2 or {$IFCONTROL:"{#IFNAME}"}=0'
+              tags:
+                - tag: scope
+                  value: performance
+            - uuid: c87cced3e31e4819a792d510a1cdf45d
+              expression: |
+                min(/TerraMaster TNAS by SNMP/net.if.in.errors[ifInErrors.{#SNMPINDEX}],5m)>{$IF.ERRORS.WARN:"{#IFNAME}"}
+                or min(/TerraMaster TNAS by SNMP/net.if.out.errors[ifOutErrors.{#SNMPINDEX}],5m)>{$IF.ERRORS.WARN:"{#IFNAME}"}
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: |
+                max(/TerraMaster TNAS by SNMP/net.if.in.errors[ifInErrors.{#SNMPINDEX}],5m)<{$IF.ERRORS.WARN:"{#IFNAME}"}*0.8
+                and max(/TerraMaster TNAS by SNMP/net.if.out.errors[ifOutErrors.{#SNMPINDEX}],5m)<{$IF.ERRORS.WARN:"{#IFNAME}"}*0.8
+              name: 'Interface {#IFDESCR}: High error rate'
+              event_name: 'Interface {#IFNAME}({#IFALIAS}): High error rate (>{$IF.ERRORS.WARN:"{#IFNAME}"} for 5m)'
+              opdata: 'errors in: {ITEM.LASTVALUE1}, errors out: {ITEM.LASTVALUE2}'
+              priority: WARNING
+              description: 'It recovers when it is below 80% of the `{$IF.ERRORS.WARN:"{#IFNAME}"}` threshold.'
+              manual_close: 'YES'
+              dependencies:
+                - name: 'Interface {#IFDESCR}: Link down'
+                  expression: '{$IFCONTROL:"{#IFNAME}"}=1 and last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and (last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#1)<>last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#2))'
+                  recovery_expression: 'last(/TerraMaster TNAS by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])<>2 or {$IFCONTROL:"{#IFNAME}"}=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+          graph_prototypes:
+            - uuid: 55ff88614c684534817282ebc426d837
+              name: 'Interface {#IFDESCR}: Network traffic'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 199C0D
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+                - sortorder: '1'
+                  drawtype: GRADIENT_LINE
+                  color: 0080FF
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+                - sortorder: '2'
+                  color: FF0000
+                  yaxisside: RIGHT
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+                - sortorder: '3'
+                  color: F7941D
+                  yaxisside: RIGHT
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+                - sortorder: '4'
+                  color: FC6EA3
+                  yaxisside: RIGHT
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+                - sortorder: '5'
+                  color: 6C59DC
+                  yaxisside: RIGHT
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+          master_item:
+            key: net.if.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#IFOPERSTATUS}'
+                - 1.3.6.1.2.1.2.2.1.8
+                - '0'
+                - '{#IFADMINSTATUS}'
+                - 1.3.6.1.2.1.2.2.1.7
+                - '0'
+                - '{#IFDESCR}'
+                - 1.3.6.1.2.1.2.2.1.2
+                - '0'
+                - '{#IFTYPE}'
+                - 1.3.6.1.2.1.2.2.1.3
+                - '0'
+                - '{#SNMPVALUE}'
+                - 1.3.6.1.2.1.2.2.1.1
+                - '0'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+        - uuid: 5d76184fc4c442568ed7517bcb120261
+          name: 'System CPUs'
+          type: DEPENDENT
+          key: sys.cpu.discovery
+          item_prototypes:
+            - uuid: 343c3585049a40b1b03e213318e74895
+              name: 'CPU #{#SNMPINDEX} Load'
+              type: DEPENDENT
+              key: 'sys.cpu[{#SNMPINDEX}]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.25.3.3.1.2.{#SNMPINDEX}'
+                    - '0'
+                  error_handler: CUSTOM_ERROR
+                  error_handler_params: '0'
+              master_item:
+                key: system.cpu.walk
+              trigger_prototypes:
+                - uuid: d84f6f407e764975875259e8fa0b2bfc
+                  expression: 'min(/TerraMaster TNAS by SNMP/sys.cpu[{#SNMPINDEX}],5m)>{$LOAD_AVG_PER_CPU.MAX.WARN}'
+                  name: 'CPU #{#SNMPINDEX} Average utilization'
+                  priority: AVERAGE
+                - uuid: 023bf1274e2644df9fdfdb7b59e06fec
+                  expression: 'min(/TerraMaster TNAS by SNMP/sys.cpu[{#SNMPINDEX}],5m)>{$CPU.UTIL.CRIT}'
+                  name: 'CPU #{#SNMPINDEX} Hight utilization'
+                  priority: HIGH
+          graph_prototypes:
+            - uuid: 44babe9824f34ce68b6dcaf3271cc6f9
+              name: 'CPU #{#SNMPINDEX} Load'
+              ymax_type_1: FIXED
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'sys.cpu[{#SNMPINDEX}]'
+          master_item:
+            key: system.cpu.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#SNMPVALUE}'
+                - 1.3.6.1.2.1.25.3.3.1.2
+                - '0'
+        - uuid: 9eac1ece385d42f2a4479c60672bc55b
+          name: 'Mounted filesystem discovery'
+          type: DEPENDENT
+          key: 'vfs.fs.discovery[snmp]'
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#FSDESCR}'
+                value: '{$VFS.FS.FSDESCR.MATCHES}'
+              - macro: '{#FSDESCR}'
+                value: '{$VFS.FS.FSDESCR.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+          description: 'Table discovery with storage filter'
+          item_prototypes:
+            - uuid: 10e688623043499f9d1eb8ff323042d3
+              name: 'FS {#FSDESCR} free space in %'
+              type: CALCULATED
+              key: 'vfs.fs.pfree[{#SNMPINDEX}]'
+              units: '%'
+              params: 'last(//vfs.fs.used[{#SNMPINDEX}])/last(//vfs.fs.size[{#SNMPINDEX}])*100'
+              tags:
+                - tag: component
+                  value: storage
+                - tag: filesystem
+                  value: '{#FSDESCR}'
+            - uuid: 78881f5c8b904d4482574be58e6167b8
+              name: 'FS: {#FSDESCR} Total size'
+              type: DEPENDENT
+              key: 'vfs.fs.size[{#SNMPINDEX}]'
+              units: B
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.25.2.3.1.5.{#SNMPINDEX}'
+                    - '0'
+                - type: MULTIPLIER
+                  parameters:
+                    - '1024'
+              master_item:
+                key: vfs.fs.walk
+              tags:
+                - tag: component
+                  value: storage
+                - tag: filesystem
+                  value: '{#FSDESCR}'
+            - uuid: 57abc51e6dc4442ea740e97dcd60d8f7
+              name: 'FS: {#FSDESCR} Used size'
+              type: DEPENDENT
+              key: 'vfs.fs.used[{#SNMPINDEX}]'
+              units: B
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.25.2.3.1.6.{#SNMPINDEX}'
+                    - '0'
+                - type: MULTIPLIER
+                  parameters:
+                    - '1024'
+              master_item:
+                key: vfs.fs.walk
+              tags:
+                - tag: component
+                  value: storage
+                - tag: filesystem
+                  value: '{#FSDESCR}'
+          trigger_prototypes:
+            - uuid: e311409e8e3143909233fd09c2162456
+              expression: 'last(/TerraMaster TNAS by SNMP/vfs.fs.pfree[{#SNMPINDEX}])={$VFS.FS.PFREE.MAX.CRIT} and last(/TerraMaster TNAS by SNMP/vfs.fs.size[{#SNMPINDEX}])>0'
+              name: 'FS {#FSDESCR} used more than {$VFS.FS.PFREE.MAX.CRIT}%'
+              priority: HIGH
+            - uuid: b2731b65de964919a91640361039b9e1
+              expression: 'last(/TerraMaster TNAS by SNMP/vfs.fs.pfree[{#SNMPINDEX}])={$VFS.FS.PFREE.MAX.WARN} and last(/TerraMaster TNAS by SNMP/vfs.fs.size[{#SNMPINDEX}])>0'
+              name: 'FS {#FSDESCR} used more than {$VFS.FS.PFREE.MAX.WARN}%'
+              priority: WARNING
+              dependencies:
+                - name: 'FS {#FSDESCR} used more than {$VFS.FS.PFREE.MAX.CRIT}%'
+                  expression: 'last(/TerraMaster TNAS by SNMP/vfs.fs.pfree[{#SNMPINDEX}])={$VFS.FS.PFREE.MAX.CRIT} and last(/TerraMaster TNAS by SNMP/vfs.fs.size[{#SNMPINDEX}])>0'
+          graph_prototypes:
+            - uuid: f9cc0bba48944d8f84c06ca4fdbfd096
+              name: 'FS {#FSDESCR} space utilization'
+              graph_items:
+                - color: FFBF00
+                  calc_fnc: ALL
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'vfs.fs.size[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'TerraMaster TNAS by SNMP'
+                    key: 'vfs.fs.used[{#SNMPINDEX}]'
+          master_item:
+            key: vfs.fs.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#SNMPVALUE}'
+                - 1.3.6.1.2.1.25.2.3.1.1
+                - '0'
+                - '{#FSDESCR}'
+                - 1.3.6.1.2.1.25.2.3.1.3
+                - '0'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+      tags:
+        - tag: class
+          value: hardware
+        - tag: target
+          value: tnas-core
+      macros:
+        - macro: '{$CPU.UTIL.CRIT}'
+          value: '90'
+          description: 'Critical threshold of CPU utilization expressed in %.'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+          description: 'Warning threshold of ICMP packet loss in %.'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+          description: 'Warning threshold of the average ICMP response time in seconds.'
+        - macro: '{$IF.ERRORS.WARN}'
+          value: '2'
+          description: 'Warning threshold of error packet rate. Can be used with interface name as context.'
+        - macro: '{$IF.UTIL.MAX}'
+          value: '90'
+          description: 'Used as a threshold in the interface utilization trigger.'
+        - macro: '{$IFCONTROL}'
+          value: '1'
+          description: 'Link status trigger will be fired only for interfaces where the context macro equals "1".'
+        - macro: '{$LOAD_AVG_PER_CPU.MAX.WARN}'
+          value: '75'
+          description: 'The warning threshold per CPU utilization expressed in %.'
+        - macro: '{$MEMORY.AVAILABLE.MIN}'
+          value: 20M
+          description: 'Used as a threshold in the available memory trigger.'
+        - macro: '{$MEMORY.UTIL.MAX}'
+          value: '90'
+          description: 'Used as a threshold in the memory utilization trigger.'
+        - macro: '{$NET.IF.IFADMINSTATUS.MATCHES}'
+          value: '^.*'
+          description: 'Used in network interface discovery rule filters.'
+        - macro: '{$NET.IF.IFADMINSTATUS.NOT_MATCHES}'
+          value: ^2$
+          description: 'Ignore `down(2)` administrative status'
+        - macro: '{$NET.IF.IFDESCR.MATCHES}'
+          value: '^.*$'
+          description: 'Used for network interface discovery. Can be overridden on the host or linked template level.'
+        - macro: '{$NET.IF.IFDESCR.NOT_MATCHES}'
+          value: '(^Software Loopback Interface|^NULL[0-9.]*$|^[Ll]o[0-9.]*$|^[Ss]ystem$|^Nu[0-9.]*$|^veth[0-9a-z]+$|docker[0-9]+|br-[a-z0-9]{12})'
+          description: 'Filters out `loopbacks`, `nulls`, docker `veth` links and `docker0 bridge` by default.'
+        - macro: '{$NET.IF.IFOPERSTATUS.MATCHES}'
+          value: '^.*$'
+          description: 'Used for network interface discovery. Can be overridden on the host or linked template level.'
+        - macro: '{$NET.IF.IFOPERSTATUS.NOT_MATCHES}'
+          value: ^6$
+          description: 'Ignore `notPresent(6)`'
+        - macro: '{$NET.IF.IFTYPE.MATCHES}'
+          value: '.*'
+          description: 'Used in network interface discovery rule filters.'
+        - macro: '{$NET.IF.IFTYPE.NOT_MATCHES}'
+          value: CHANGE_IF_NEEDED
+          description: 'Used in network interface discovery rule filters.'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+          description: 'Time interval for the SNMP availability trigger.'
+        - macro: '{$SWAP.PFREE.MIN.WARN}'
+          value: '50'
+          description: 'The warning threshold of the minimum free swap.'
+        - macro: '{$VFS.FS.FSDESCR.MATCHES}'
+          value: '^/.*'
+          description: 'Used in filesystem discovery. Can be overridden on the host or linked template level.'
+        - macro: '{$VFS.FS.FSDESCR.NOT_MATCHES}'
+          value: CHANGE_IF_NEEDED
+          description: 'Used in filesystem discovery. Can be overridden on the host or linked template level.'
+        - macro: '{$VFS.FS.INODE.PFREE.MIN.CRIT}'
+          value: '10'
+          description: 'The critical threshold of the filesystem metadata utilization.'
+        - macro: '{$VFS.FS.INODE.PFREE.MIN.WARN}'
+          value: '20'
+          description: 'The warning threshold of the filesystem metadata utilization.'
+        - macro: '{$VFS.FS.PFREE.MAX.CRIT}'
+          value: '90'
+          description: 'The critical threshold of the filesystem utilization.'
+        - macro: '{$VFS.FS.PFREE.MAX.WARN}'
+          value: '80'
+          description: 'The warning threshold of the filesystem utilization.'
+      dashboards:
+        - uuid: 01d944189cbf46f6a7e7a5c4a9ae49c8
+          name: Filesystems
+          pages:
+            - name: Overview
+              widgets:
+                - type: graphprototype
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '3'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'FS {#FSDESCR} space utilization'
+                    - type: STRING
+                      name: reference
+                      value: AAAEB
+        - uuid: 6a37ded0e71841eca2661d2980d5a0b1
+          name: 'Network interfaces'
+          pages:
+            - widgets:
+                - type: graphprototype
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'Interface {#IFDESCR}: Network traffic'
+                    - type: STRING
+                      name: reference
+                      value: AAAAI
+        - uuid: 611d40724b514d8492c3a6c17867efbe
+          name: 'System performance'
+          pages:
+            - widgets:
+                - type: graph
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'Linux: CPU processes changes'
+                    - type: STRING
+                      name: reference
+                      value: AAAAA
+                - type: graph
+                  'y': '5'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'Linux: Memory usage'
+                    - type: STRING
+                      name: reference
+                      value: AAAAC
+                - type: graphprototype
+                  'y': '10'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '3'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'CPU #{#SNMPINDEX} Load'
+                    - type: STRING
+                      name: reference
+                      value: AAAEA
+                - type: graphprototype
+                  'y': '15'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'FS {#FSDESCR} space utilization'
+                    - type: STRING
+                      name: reference
+                      value: AAAAH
+                - type: graphprototype
+                  'y': '20'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'Interface {#IFDESCR}: Network traffic'
+                    - type: STRING
+                      name: reference
+                      value: TWOXC
+                - type: graph
+                  x: '36'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'Linux: User number'
+                    - type: STRING
+                      name: reference
+                      value: PCARS
+                - type: graph
+                  x: '36'
+                  'y': '5'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'TerraMaster TNAS by SNMP'
+                        name: 'Linux: Swap usage'
+                    - type: STRING
+                      name: reference
+                      value: AAAAD
+      valuemaps:
+        - uuid: 0f8f95802c7f48998be21aa9162aa8c3
+          name: 'IF-MIB::ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: up
+            - value: '2'
+              newvalue: down
+            - value: '4'
+              newvalue: unknown
+            - value: '5'
+              newvalue: dormant
+            - value: '6'
+              newvalue: notPresent
+            - value: '7'
+              newvalue: lowerLayerDown
+        - uuid: fabda2ce40a64de89fc7077418606a31
+          name: 'IF-MIB::ifType'
+          mappings:
+            - value: '1'
+              newvalue: other
+            - value: '2'
+              newvalue: regular1822
+            - value: '3'
+              newvalue: hdh1822
+            - value: '4'
+              newvalue: ddnX25
+            - value: '5'
+              newvalue: rfc877x25
+            - value: '6'
+              newvalue: ethernetCsmacd
+            - value: '7'
+              newvalue: iso88023Csmacd
+            - value: '8'
+              newvalue: iso88024TokenBus
+            - value: '9'
+              newvalue: iso88025TokenRing
+            - value: '10'
+              newvalue: iso88026Man
+            - value: '11'
+              newvalue: starLan
+            - value: '12'
+              newvalue: proteon10Mbit
+            - value: '13'
+              newvalue: proteon80Mbit
+            - value: '14'
+              newvalue: hyperchannel
+            - value: '15'
+              newvalue: fddi
+            - value: '16'
+              newvalue: lapb
+            - value: '17'
+              newvalue: sdlc
+            - value: '18'
+              newvalue: ds1
+            - value: '19'
+              newvalue: e1
+            - value: '20'
+              newvalue: basicISDN
+            - value: '21'
+              newvalue: primaryISDN
+            - value: '22'
+              newvalue: propPointToPointSerial
+            - value: '23'
+              newvalue: ppp
+            - value: '24'
+              newvalue: softwareLoopback
+            - value: '25'
+              newvalue: eon
+            - value: '26'
+              newvalue: ethernet3Mbit
+            - value: '27'
+              newvalue: nsip
+            - value: '28'
+              newvalue: slip
+            - value: '29'
+              newvalue: ultra
+            - value: '30'
+              newvalue: ds3
+            - value: '31'
+              newvalue: sip
+            - value: '32'
+              newvalue: frameRelay
+            - value: '33'
+              newvalue: rs232
+            - value: '34'
+              newvalue: para
+            - value: '35'
+              newvalue: arcnet
+            - value: '36'
+              newvalue: arcnetPlus
+            - value: '37'
+              newvalue: atm
+            - value: '38'
+              newvalue: miox25
+            - value: '39'
+              newvalue: sonet
+            - value: '40'
+              newvalue: x25ple
+            - value: '41'
+              newvalue: iso88022llc
+            - value: '42'
+              newvalue: localTalk
+            - value: '43'
+              newvalue: smdsDxi
+            - value: '44'
+              newvalue: frameRelayService
+            - value: '45'
+              newvalue: v35
+            - value: '46'
+              newvalue: hssi
+            - value: '47'
+              newvalue: hippi
+            - value: '48'
+              newvalue: modem
+            - value: '49'
+              newvalue: aal5
+            - value: '50'
+              newvalue: sonetPath
+            - value: '51'
+              newvalue: sonetVT
+            - value: '52'
+              newvalue: smdsIcip
+            - value: '53'
+              newvalue: propVirtual
+            - value: '54'
+              newvalue: propMultiplexor
+            - value: '55'
+              newvalue: ieee80212
+            - value: '56'
+              newvalue: fibreChannel
+            - value: '57'
+              newvalue: hippiInterface
+            - value: '58'
+              newvalue: frameRelayInterconnect
+            - value: '59'
+              newvalue: aflane8023
+            - value: '60'
+              newvalue: aflane8025
+            - value: '61'
+              newvalue: cctEmul
+            - value: '62'
+              newvalue: fastEther
+            - value: '63'
+              newvalue: isdn
+            - value: '64'
+              newvalue: v11
+            - value: '65'
+              newvalue: v36
+            - value: '66'
+              newvalue: g703at64k
+            - value: '67'
+              newvalue: g703at2mb
+            - value: '68'
+              newvalue: qllc
+            - value: '69'
+              newvalue: fastEtherFX
+            - value: '70'
+              newvalue: channel
+            - value: '71'
+              newvalue: ieee80211
+            - value: '72'
+              newvalue: ibm370parChan
+            - value: '73'
+              newvalue: escon
+            - value: '74'
+              newvalue: dlsw
+            - value: '75'
+              newvalue: isdns
+            - value: '76'
+              newvalue: isdnu
+            - value: '77'
+              newvalue: lapd
+            - value: '78'
+              newvalue: ipSwitch
+            - value: '79'
+              newvalue: rsrb
+            - value: '80'
+              newvalue: atmLogical
+            - value: '81'
+              newvalue: ds0
+            - value: '82'
+              newvalue: ds0Bundle
+            - value: '83'
+              newvalue: bsc
+            - value: '84'
+              newvalue: async
+            - value: '85'
+              newvalue: cnr
+            - value: '86'
+              newvalue: iso88025Dtr
+            - value: '87'
+              newvalue: eplrs
+            - value: '88'
+              newvalue: arap
+            - value: '89'
+              newvalue: propCnls
+            - value: '90'
+              newvalue: hostPad
+            - value: '91'
+              newvalue: termPad
+            - value: '92'
+              newvalue: frameRelayMPI
+            - value: '93'
+              newvalue: x213
+            - value: '94'
+              newvalue: adsl
+            - value: '95'
+              newvalue: radsl
+            - value: '96'
+              newvalue: sdsl
+            - value: '97'
+              newvalue: vdsl
+            - value: '98'
+              newvalue: iso88025CRFPInt
+            - value: '99'
+              newvalue: myrinet
+            - value: '100'
+              newvalue: voiceEM
+            - value: '101'
+              newvalue: voiceFXO
+            - value: '102'
+              newvalue: voiceFXS
+            - value: '103'
+              newvalue: voiceEncap
+            - value: '104'
+              newvalue: voiceOverIp
+            - value: '105'
+              newvalue: atmDxi
+            - value: '106'
+              newvalue: atmFuni
+            - value: '107'
+              newvalue: atmIma
+            - value: '108'
+              newvalue: pppMultilinkBundle
+            - value: '109'
+              newvalue: ipOverCdlc
+            - value: '110'
+              newvalue: ipOverClaw
+            - value: '111'
+              newvalue: stackToStack
+            - value: '112'
+              newvalue: virtualIpAddress
+            - value: '113'
+              newvalue: mpc
+            - value: '114'
+              newvalue: ipOverAtm
+            - value: '115'
+              newvalue: iso88025Fiber
+            - value: '116'
+              newvalue: tdlc
+            - value: '117'
+              newvalue: gigabitEthernet
+            - value: '118'
+              newvalue: hdlc
+            - value: '119'
+              newvalue: lapf
+            - value: '120'
+              newvalue: v37
+            - value: '121'
+              newvalue: x25mlp
+            - value: '122'
+              newvalue: x25huntGroup
+            - value: '123'
+              newvalue: trasnpHdlc
+            - value: '124'
+              newvalue: interleave
+            - value: '125'
+              newvalue: fast
+            - value: '126'
+              newvalue: ip
+            - value: '127'
+              newvalue: docsCableMaclayer
+            - value: '128'
+              newvalue: docsCableDownstream
+            - value: '129'
+              newvalue: docsCableUpstream
+            - value: '130'
+              newvalue: a12MppSwitch
+            - value: '131'
+              newvalue: tunnel
+            - value: '132'
+              newvalue: coffee
+            - value: '133'
+              newvalue: ces
+            - value: '134'
+              newvalue: atmSubInterface
+            - value: '135'
+              newvalue: l2vlan
+            - value: '136'
+              newvalue: l3ipvlan
+            - value: '137'
+              newvalue: l3ipxvlan
+            - value: '138'
+              newvalue: digitalPowerline
+            - value: '139'
+              newvalue: mediaMailOverIp
+            - value: '140'
+              newvalue: dtm
+            - value: '141'
+              newvalue: dcn
+            - value: '142'
+              newvalue: ipForward
+            - value: '143'
+              newvalue: msdsl
+            - value: '144'
+              newvalue: ieee1394
+            - value: '145'
+              newvalue: if-gsn
+            - value: '146'
+              newvalue: dvbRccMacLayer
+            - value: '147'
+              newvalue: dvbRccDownstream
+            - value: '148'
+              newvalue: dvbRccUpstream
+            - value: '149'
+              newvalue: atmVirtual
+            - value: '150'
+              newvalue: mplsTunnel
+            - value: '151'
+              newvalue: srp
+            - value: '152'
+              newvalue: voiceOverAtm
+            - value: '153'
+              newvalue: voiceOverFrameRelay
+            - value: '154'
+              newvalue: idsl
+            - value: '155'
+              newvalue: compositeLink
+            - value: '156'
+              newvalue: ss7SigLink
+            - value: '157'
+              newvalue: propWirelessP2P
+            - value: '158'
+              newvalue: frForward
+            - value: '159'
+              newvalue: rfc1483
+            - value: '160'
+              newvalue: usb
+            - value: '161'
+              newvalue: ieee8023adLag
+            - value: '162'
+              newvalue: bgppolicyaccounting
+            - value: '163'
+              newvalue: frf16MfrBundle
+            - value: '164'
+              newvalue: h323Gatekeeper
+            - value: '165'
+              newvalue: h323Proxy
+            - value: '166'
+              newvalue: mpls
+            - value: '167'
+              newvalue: mfSigLink
+            - value: '168'
+              newvalue: hdsl2
+            - value: '169'
+              newvalue: shdsl
+            - value: '170'
+              newvalue: ds1FDL
+            - value: '171'
+              newvalue: pos
+            - value: '172'
+              newvalue: dvbAsiIn
+            - value: '173'
+              newvalue: dvbAsiOut
+            - value: '174'
+              newvalue: plc
+            - value: '175'
+              newvalue: nfas
+            - value: '176'
+              newvalue: tr008
+            - value: '177'
+              newvalue: gr303RDT
+            - value: '178'
+              newvalue: gr303IDT
+            - value: '179'
+              newvalue: isup
+            - value: '180'
+              newvalue: propDocsWirelessMaclayer
+            - value: '181'
+              newvalue: propDocsWirelessDownstream
+            - value: '182'
+              newvalue: propDocsWirelessUpstream
+            - value: '183'
+              newvalue: hiperlan2
+            - value: '184'
+              newvalue: propBWAp2Mp
+            - value: '185'
+              newvalue: sonetOverheadChannel
+            - value: '186'
+              newvalue: digitalWrapperOverheadChannel
+            - value: '187'
+              newvalue: aal2
+            - value: '188'
+              newvalue: radioMAC
+            - value: '189'
+              newvalue: atmRadio
+            - value: '190'
+              newvalue: imt
+            - value: '191'
+              newvalue: mvl
+            - value: '192'
+              newvalue: reachDSL
+            - value: '193'
+              newvalue: frDlciEndPt
+            - value: '194'
+              newvalue: atmVciEndPt
+            - value: '195'
+              newvalue: opticalChannel
+            - value: '196'
+              newvalue: opticalTransport
+            - value: '197'
+              newvalue: propAtm
+            - value: '198'
+              newvalue: voiceOverCable
+            - value: '199'
+              newvalue: infiniband
+            - value: '200'
+              newvalue: teLink
+            - value: '201'
+              newvalue: q2931
+            - value: '202'
+              newvalue: virtualTg
+            - value: '203'
+              newvalue: sipTg
+            - value: '204'
+              newvalue: sipSig
+            - value: '205'
+              newvalue: docsCableUpstreamChannel
+            - value: '206'
+              newvalue: econet
+            - value: '207'
+              newvalue: pon155
+            - value: '208'
+              newvalue: pon622
+            - value: '209'
+              newvalue: bridge
+            - value: '210'
+              newvalue: linegroup
+            - value: '211'
+              newvalue: voiceEMFGD
+            - value: '212'
+              newvalue: voiceFGDEANA
+            - value: '213'
+              newvalue: voiceDID
+            - value: '214'
+              newvalue: mpegTransport
+            - value: '215'
+              newvalue: sixToFour
+            - value: '216'
+              newvalue: gtp
+            - value: '217'
+              newvalue: pdnEtherLoop1
+            - value: '218'
+              newvalue: pdnEtherLoop2
+            - value: '219'
+              newvalue: opticalChannelGroup
+            - value: '220'
+              newvalue: homepna
+            - value: '221'
+              newvalue: gfp
+            - value: '222'
+              newvalue: ciscoISLvlan
+            - value: '223'
+              newvalue: actelisMetaLOOP
+            - value: '224'
+              newvalue: fcipLink
+            - value: '225'
+              newvalue: rpr
+            - value: '226'
+              newvalue: qam
+            - value: '227'
+              newvalue: lmp
+            - value: '228'
+              newvalue: cblVectaStar
+            - value: '229'
+              newvalue: docsCableMCmtsDownstream
+            - value: '230'
+              newvalue: adsl2
+            - value: '231'
+              newvalue: macSecControlledIF
+            - value: '232'
+              newvalue: macSecUncontrolledIF
+            - value: '233'
+              newvalue: aviciOpticalEther
+            - value: '234'
+              newvalue: atmbond
+            - value: '235'
+              newvalue: voiceFGDOS
+            - value: '236'
+              newvalue: mocaVersion1
+            - value: '237'
+              newvalue: ieee80216WMAN
+            - value: '238'
+              newvalue: adsl2plus
+            - value: '239'
+              newvalue: dvbRcsMacLayer
+            - value: '240'
+              newvalue: dvbTdm
+            - value: '241'
+              newvalue: dvbRcsTdma
+            - value: '242'
+              newvalue: x86Laps
+            - value: '243'
+              newvalue: wwanPP
+            - value: '244'
+              newvalue: wwanPP2
+            - value: '245'
+              newvalue: voiceEBS
+            - value: '246'
+              newvalue: ifPwType
+            - value: '247'
+              newvalue: ilan
+            - value: '248'
+              newvalue: pip
+            - value: '249'
+              newvalue: aluELP
+            - value: '250'
+              newvalue: gpon
+            - value: '251'
+              newvalue: vdsl2
+            - value: '252'
+              newvalue: capwapDot11Profile
+            - value: '253'
+              newvalue: capwapDot11Bss
+            - value: '254'
+              newvalue: capwapWtpVirtualRadio
+            - value: '255'
+              newvalue: bits
+            - value: '256'
+              newvalue: docsCableUpstreamRfPort
+            - value: '257'
+              newvalue: cableDownstreamRfPort
+            - value: '258'
+              newvalue: vmwareVirtualNic
+            - value: '259'
+              newvalue: ieee802154
+            - value: '260'
+              newvalue: otnOdu
+            - value: '261'
+              newvalue: otnOtu
+            - value: '262'
+              newvalue: ifVfiType
+            - value: '263'
+              newvalue: g9981
+            - value: '264'
+              newvalue: g9982
+            - value: '265'
+              newvalue: g9983
+            - value: '266'
+              newvalue: aluEpon
+            - value: '267'
+              newvalue: aluEponOnu
+            - value: '268'
+              newvalue: aluEponPhysicalUni
+            - value: '269'
+              newvalue: aluEponLogicalLink
+            - value: '270'
+              newvalue: aluGponOnu
+            - value: '271'
+              newvalue: aluGponPhysicalUni
+            - value: '272'
+              newvalue: vmwareNicTeam
+            - value: '277'
+              newvalue: docsOfdmDownstream
+            - value: '278'
+              newvalue: docsOfdmaUpstream
+            - value: '279'
+              newvalue: gfast
+            - value: '280'
+              newvalue: sdci
+            - value: '281'
+              newvalue: xboxWireless
+            - value: '282'
+              newvalue: fastdsl
+            - value: '283'
+              newvalue: docsCableScte55d1FwdOob
+            - value: '284'
+              newvalue: docsCableScte55d1RetOob
+            - value: '285'
+              newvalue: docsCableScte55d2DsOob
+            - value: '286'
+              newvalue: docsCableScte55d2UsOob
+            - value: '287'
+              newvalue: docsCableNdf
+            - value: '288'
+              newvalue: docsCableNdr
+            - value: '289'
+              newvalue: ptm
+            - value: '290'
+              newvalue: ghn
+        - uuid: 5dc1f7b8d6844f039caca58bf749b588
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 98996ae93b0347e49e8bf4516911144b
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'not available'
+            - value: '1'
+              newvalue: available
+            - value: '2'
+              newvalue: unknown
+  triggers:
+    - uuid: ecf20002c93346848ff79e7c4d507bd3
+      expression: 'max(/TerraMaster TNAS by SNMP/system.swap.pfree[snmp],5m)<{$SWAP.PFREE.MIN.WARN} and last(/TerraMaster TNAS by SNMP/system.swap.total[memTotalSwap.0])>0'
+      name: 'High swap space usage'
+      event_name: 'High swap space usage (less than {$SWAP.PFREE.MIN.WARN}% free)'
+      opdata: 'Free: {ITEM.LASTVALUE1}, total: {ITEM.LASTVALUE2}'
+      priority: WARNING
+      description: 'If there is no swap configured, this trigger is ignored.'
+      dependencies:
+        - name: 'High memory utilization'
+          expression: 'min(/TerraMaster TNAS by SNMP/vm.memory.util[snmp],5m)>{$MEMORY.UTIL.MAX}'
+        - name: 'Lack of available memory'
+          expression: 'max(/TerraMaster TNAS by SNMP/vm.memory.available[snmp],5m)<{$MEMORY.AVAILABLE.MIN} and last(/TerraMaster TNAS by SNMP/vm.memory.total[memTotalReal.0])>0'
+      tags:
+        - tag: scope
+          value: capacity
+    - uuid: 2a5bd28c5bb149c4aed642733b3f7f45
+      expression: 'max(/TerraMaster TNAS by SNMP/vm.memory.available[snmp],5m)<{$MEMORY.AVAILABLE.MIN} and last(/TerraMaster TNAS by SNMP/vm.memory.total[memTotalReal.0])>0'
+      name: 'Lack of available memory'
+      event_name: 'Lack of available memory (<{$MEMORY.AVAILABLE.MIN} of {ITEM.VALUE2})'
+      opdata: 'Available: {ITEM.LASTVALUE1}, total: {ITEM.LASTVALUE2}'
+      priority: AVERAGE
+      description: 'The system is running out of memory.'
+      tags:
+        - tag: scope
+          value: capacity
+        - tag: scope
+          value: performance
+  graphs:
+    - uuid: aed95d35c33c4b25add54c29474474d8
+      name: 'Linux: CPU processes changes'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: system.cpu.processes
+    - uuid: 3c1c609995c64849ba0e20df470b161c
+      name: 'Linux: Memory usage'
+      ymin_type_1: FIXED
+      graph_items:
+        - drawtype: BOLD_LINE
+          color: FFBF00
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: 'vm.memory.total[memTotalReal.0]'
+        - sortorder: '1'
+          drawtype: GRADIENT_LINE
+          color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: 'vm.memory.shared[memShared.0]'
+    - uuid: 6396cd6a4dcf47f6a8f5f64f1c9bb689
+      name: 'Linux: Memory utilization'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 199C0D
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: 'vm.memory.util[snmp]'
+    - uuid: 87eae8f59a7f4be59462fe6765dfc158
+      name: 'Linux: Swap usage'
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 199C0D
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: 'system.swap.free[memUsedSwap.0]'
+        - sortorder: '1'
+          color: FFBF00
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: 'system.swap.total[memTotalSwap.0]'
+    - uuid: 414442ad23854a59acf44c101bed0623
+      name: 'Linux: User number'
+      graph_items:
+        - color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'TerraMaster TNAS by SNMP'
+            key: system.users
